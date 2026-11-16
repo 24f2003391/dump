@@ -1,0 +1,814 @@
+(base) sidb@SiddharthVictus:~/developer/67/67-game$ git pull --ff-only origin milestone-3/backend-foundation
+remote: Enumerating objects: 93, done.
+remote: Counting objects: 100% (93/93), done.
+remote: Compressing objects: 100% (70/70), done.
+remote: Total 70 (delta 43), reused 0 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (70/70), 10.34 KiB | 56.00 KiB/s, done.
+From github.com:SiddharthBhaumik/67-game
+ * branch            milestone-3/backend-foundation -> FETCH_HEAD
+   2489e16..3b77f70  milestone-3/backend-foundation -> origin/milestone-3/backend-foundation
+Updating 2489e16..3b77f70
+Fast-forward
+ Plans/PROGRESS.md                                                         |  9 +++++++++
+ apps/api/src/index.ts                                                     |  3 +++
+ apps/api/src/room-durable-object.ts                                       | 50 +++++++++++++++++++++++++++++++++++++++-----------
+ apps/api/test/anonymous-lobby.test.ts                                     | 49 +++++++++++++++++++++++++++++++------------------
+ apps/api/test/room-durable-object.test.ts                                 | 39 +++++++++++++++++++++++++++++++++++++++
+ brand plans/Animations/weighing scale animation/README.md                 | 41 ++++++++++++++++++++++-------------------
+ brand plans/Animations/weighing scale animation/beam.svg                  |  2 +-
+ brand plans/Animations/weighing scale animation/left-pan.svg              |  2 +-
+ brand plans/Animations/weighing scale animation/numeral-6.svg             |  2 +-
+ brand plans/Animations/weighing scale animation/numeral-7.svg             |  2 +-
+ brand plans/Animations/weighing scale animation/pivot.svg                 |  2 +-
+ brand plans/Animations/weighing scale animation/right-pan.svg             |  2 +-
+ brand plans/Animations/weighing scale animation/scale-base.svg            |  2 +-
+ brand plans/Animations/weighing scale animation/suspension-strings.svg    |  2 +-
+ brand plans/Animations/weighing scale animation/weighing-scale-master.svg |  1 +
+ 15 files changed, 152 insertions(+), 56 deletions(-)
+ create mode 100644 brand plans/Animations/weighing scale animation/weighing-scale-master.svg
+(base) sidb@SiddharthVictus:~/developer/67/67-game$ pnpm --filter @67/api exec vitest run test/room-coordinator.test.ts
+pnpm --filter @67/api exec vitest run test/room-durable-object.test.ts
+pnpm --filter @67/api exec vitest run test/anonymous-lobby.test.ts
+
+pnpm -r typecheck
+pnpm test
+pnpm build
+
+ RUN  v4.1.12 /home/sidb/developer/67/67-game/apps/api
+
+Using secrets defined in .dev.vars
+ ✓ test/room-coordinator.test.ts (23 tests) 142ms
+   ✓ InMemoryRoomCoordinator match start (2)
+     ✓ starts a fully connected lobby only when requested by its host 19ms
+     ✓ rejects match start if any active lobby member is disconnected 8ms
+   ✓ InMemoryRoomCoordinator (6)
+     ✓ serializes concurrent departures and rejects the stale second revision 12ms
+     ✓ applies concurrent mutations sequentially when no revision guard is supplied 10ms
+     ✓ rejects voluntary departure from a different authenticated session 2ms
+     ✓ returns detached snapshots that cannot mutate coordinator state 3ms
+     ✓ does not poison the queue after a rejected mutation 4ms
+     ✓ rejects stale and malformed expected revisions without changing state 3ms
+   ✓ InMemoryRoomCoordinator disconnect and reconnect (9)
+     ✓ records the first disconnect and does not extend grace on duplicate events 4ms
+     ✓ reconnects the same session before the deadline and preserves seat and host 2ms
+     ✓ rejects a reconnect from a different session without changing state 2ms
+     ✓ treats the exact deadline as expired, even if the timer has not fired 4ms
+     ✓ makes an early expiry harmless and commits departure at the deadline 3ms
+     ✓ does not let a stale expiry remove a player who has reconnected 2ms
+     ✓ serializes a reconnect-before-deadline against a later expiry callback 1ms
+     ✓ serializes expiry before a late reconnect and never restores the departed member 1ms
+     ✓ rejects stale revision guards and invalid timestamps without mutation 1ms
+   ✓ InMemoryRoomCoordinator batch disconnect expiry (2)
+     ✓ processes every simultaneously overdue player before deciding no-contest 3ms
+     ✓ expires only due players and continues with two remaining participants 1ms
+   ✓ InMemoryRoomCoordinator disconnected-turn pause (4)
+     ✓ pauses the current player's first-action boundary without mutating game state 3ms
+     ✓ allows a connected current player to begin while another player is disconnected 2ms
+     ✓ does not advance a disconnected player's turn boundary or expire their effects 2ms
+     ✓ begins the paused turn after the same player reconnects 3ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  16:45:03
+   Duration  5.49s (transform 572ms, setup 0ms, import 849ms, tests 142ms, environment 1ms)
+
+
+ RUN  v4.1.12 /home/sidb/developer/67/67-game/apps/api
+
+Using secrets defined in .dev.vars
+ ❯ test/room-durable-object.test.ts (20 tests | 1 failed) 1476ms
+   ❯ SQLite-backed RoomDurableObject (20)
+     ✓ creates a room once and persists its aggregate across stub lookups 92ms
+     ✓ returns expected match-start validation failures as RPC-safe results 62ms
+     × returns expected departure validation failures as RPC-safe results 94ms
+     ✓ starts a match durably only when the host starts a fully connected lobby 76ms
+     ✓ starts a fresh rematch while retaining the room edition and existing seats 64ms
+     ✓ rejects rematches from guests and stale room revisions 58ms
+     ✓ applies optional seat shuffling to the room roster and new game 57ms
+     ✓ allows finished-room players to reconnect without a match-forfeit deadline 98ms
+     ✓ persists a disconnect and schedules its original grace deadline 88ms
+     ✓ moves the single room alarm to the next deadline after reconnect 99ms
+     ✓ clears the alarm when the last disconnected member reconnects 77ms
+     ✓ restores durable room state after Durable Object eviction 82ms
+     ✓ authenticates the room credential and reconnects the same active player 76ms
+     ✓ rejects an invalid room credential without reconnecting 41ms
+     ✓ permanently expires a disconnected member at the exact five-minute deadline 81ms
+     ✓ processes an overdue disconnect through the Durable Object alarm 89ms
+     ✓ commits gameplay commands once and replays the durable receipt 74ms
+     ✓ rejects gameplay commands from a disconnected or mismatched session 64ms
+     ✓ consumes a connection ticket once and rejects replay 54ms
+     ✓ rejects ticket consumption for a non-member or expired ticket 43ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/room-durable-object.test.ts > SQLite-backed RoomDurableObject > returns expected departure validation failures as RPC-safe results
+AssertionError: expected { schemaVersion: 1, …(10), …(1) } to match object { Object (status, revision, ...) }
+(19 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -8,9 +8,29 @@
+        "participationStatus": "active",
+        "playerId": "p1",
+        "seat": 1,
+        "sessionId": "session-p1",
+      },
++     {
++       "connectionStatus": "connected",
++       "departedAt": null,
++       "disconnectedAt": null,
++       "joinedAt": 20,
++       "participationStatus": "active",
++       "playerId": "p2",
++       "seat": 2,
++       "sessionId": "session-p2",
++     },
++     {
++       "connectionStatus": "connected",
++       "departedAt": null,
++       "disconnectedAt": null,
++       "joinedAt": 30,
++       "participationStatus": "active",
++       "playerId": "p3",
++       "seat": 3,
++       "sessionId": "session-p3",
++     },
+    ],
+    "revision": 0,
+    "status": "active",
+  }
+
+ ❯ test/room-durable-object.test.ts:119:42
+    117|     })).resolves.toMatchObject({ status: "error", code: "STALE_REVISION" });
+    118|
+    119|     await expect(stub.getSnapshot(roomId)).resolves.toMatchObject({
+       |                                          ^
+    120|       status: "active", revision: 0, members: [
+    121|         expect.objectContaining({ playerId: "p1", participationStatus: "active" }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 passed (20)
+   Start at  16:45:11
+   Duration  6.26s (transform 606ms, setup 0ms, import 897ms, tests 1.48s, environment 0ms)
+
+Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL
+
+  × "pnpm recursive exec" failed in /home/sidb/developer/67/67-game/apps/api
+
+
+ RUN  v4.1.12 /home/sidb/developer/67/67-game/apps/api
+
+Using secrets defined in .dev.vars
+exception = kj/compat/http.c++:4365: disconnected: other end of WebSocketPipe was destroyed
+stack: /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@675ddfc /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@3fee934 /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@6928a70 /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@2c52970
+ ❯ test/anonymous-lobby.test.ts (23 tests | 11 failed) 56216ms
+   ❯ anonymous private lobby HTTP API (23)
+     ✓ creates a lobby with server-generated identity and a secret credential hash at rest 91ms
+     ✓ joins a lobby with a new server identity and atomically assigned seat 80ms
+     ✓ enforces the eight-player limit 228ms
+     × broadcasts lobby joins and starts a match through the authenticated host route 5025ms
+     ✓ permanently removes a lobby leaver and transfers host without creating a match forfeit 132ms
+     ✓ closes an empty lobby when its final member leaves 72ms
+     ✓ authenticates a persisted room credential without returning the secret or hash 58ms
+     ✓ rejects an incorrect room credential without revealing membership 59ms
+     ✓ issues a short-lived signed ticket and upgrades a socket exactly once 116ms
+     × keeps a player connected until the final socket for the session closes 5004ms
+     × restores socket identity from its attachment after Durable Object eviction 5014ms
+     × executes a WebSocket gameplay command once and broadcasts fresh snapshots 5005ms
+     × executes a complete player turn through authenticated WebSocket commands 5004ms
+     × answers protocol ping messages with a matching pong 5003ms
+     × resynchronizes with a fresh recipient-safe room snapshot 5003ms
+     × rejects a message that attempts to address a different room 5009ms
+     ✓ tracks lobby socket presence without applying the active-match grace timer 129ms
+     ✓ requires the negotiated protocol and a WebSocket upgrade 65ms
+     ✓ rejects malformed bodies, unsupported modes and disallowed browser origins 25ms
+     × pauses the current player's turn during an active disconnect and resumes it after reconnect 5003ms
+     × authenticates voluntary match departure, transfers the host, and records a forfeit 5006ms
+     × broadcasts disconnect timestamps to the other room members 5005ms
+     ✓ validates rematch requests and authenticates the host credential before dispatch 71ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 11 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > broadcasts lobby joins and starts a match through the authenticated host route
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:129:3
+    127|
+    128|
+    129|   it("broadcasts lobby joins and starts a match through the authenticated host route", async () => {
+       |   ^
+    130|     const { body: host } = await createRoom();
+    131|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > keeps a player connected until the final socket for the session closes
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:330:3
+    328|   });
+    329|
+    330|   it("keeps a player connected until the final socket for the session closes", async () => {
+       |   ^
+    331|     const { body: created } = await createRoom();
+    332|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > restores socket identity from its attachment after Durable Object eviction
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:365:3
+    363|   });
+    364|
+    365|   it("restores socket identity from its attachment after Durable Object eviction", async () => {
+       |   ^
+    366|     const { body: created } = await createRoom();
+    367|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > executes a WebSocket gameplay command once and broadcasts fresh snapshots
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:380:3
+    378|
+    379|
+    380|   it("executes a WebSocket gameplay command once and broadcasts fresh snapshots", async () => {
+       |   ^
+    381|     const { body: host } = await createRoom("hidden");
+    382|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > executes a complete player turn through authenticated WebSocket commands
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:566:3
+    564|   });
+    565|
+    566|   it("executes a complete player turn through authenticated WebSocket commands", async () => {
+       |   ^
+    567|     const { body: host } = await createRoom("hidden");
+    568|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > answers protocol ping messages with a matching pong
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:669:3
+    667|   });
+    668|
+    669|   it("answers protocol ping messages with a matching pong", async () => {
+       |   ^
+    670|     const { body: created } = await createRoom();
+    671|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > resynchronizes with a fresh recipient-safe room snapshot
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:685:3
+    683|   });
+    684|
+    685|   it("resynchronizes with a fresh recipient-safe room snapshot", async () => {
+       |   ^
+    686|     const { body: created } = await createRoom("hidden");
+    687|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > rejects a message that attempts to address a different room
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:712:3
+    710|   });
+    711|
+    712|   it("rejects a message that attempts to address a different room", async () => {
+       |   ^
+    713|     const { body: created } = await createRoom();
+    714|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > pauses the current player's turn during an active disconnect and resumes it after reconnect
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:785:3
+    783|   });
+    784|
+    785|   it("pauses the current player's turn during an active disconnect and resumes it after reconnect", async () => {
+       |   ^
+    786|     const { body: host } = await createRoom("hidden");
+    787|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > authenticates voluntary match departure, transfers the host, and records a forfeit
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:882:3
+    880|   });
+    881|
+    882|   it("authenticates voluntary match departure, transfers the host, and records a forfeit", async () => {
+       |   ^
+    883|     const { body: host } = await createRoom();
+    884|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/11]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > broadcasts disconnect timestamps to the other room members
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:974:3
+    972|   });
+    973|
+    974|   it("broadcasts disconnect timestamps to the other room members", async () => {
+       |   ^
+    975|     const { body: host } = await createRoom();
+    976|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/11]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  11 failed | 12 passed (23)
+   Start at  16:45:19
+   Duration  60.46s (transform 658ms, setup 0ms, import 952ms, tests 56.22s, environment 0ms)
+
+Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL
+
+  × "pnpm recursive exec" failed in /home/sidb/developer/67/67-game/apps/api
+
+packages/protocol typecheck$ tsc -p tsconfig.json
+└─ Done in 3s
+apps/web typecheck$ tsc -p tsconfig.json
+└─ Done in 4.3s
+packages/game-engine typecheck$ tsc -p tsconfig.json
+└─ Done in 3.7s
+packages/room-coordinator typecheck$ tsc -p tsconfig.json
+└─ Done in 5s
+apps/api typecheck$ wrangler types worker-configuration.d.ts && tsc -p tsconfig.json
+│
+│  ⛅️ wrangler 4.161.0 (update available 4.163.0)
+│ ───────────────────────────────────────────────
+│ Generating project types...
+│
+│ interface __BaseEnv_Env {
+│   PropWS_TICKET_SECRET: string;
+│ src/inROOM_DURABLE_OBJECT: DurableObjectNamespace<import("./src/index").RoomDurableObject>;
+│ }
+│ declare namespace Cloudflare {
+│   Propinterface GlobalProps {
+│  Running...   mainModule: typeof import("./src/index");
+│               durableNamespaces: "RoomDurableObject";
+│       }
+│       interface Env extends __BaseEnv_Env {}
+│ }
+│ interface Env extends __BaseEnv_Env {}
+│ type StringifyValues<EnvType extends Record<string, unknown>> = {
+│       [Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
+│ };
+│ declare namespace NodeJS {
+│       interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "WS_TICKET_SECRET">> {}
+│ }
+│
+│ Generating runtime types...
+│
+│ Runtime types generated.
+│
+│
+│ ✨ Types written to worker-configuration.d.ts
+│
+│ Action required Install @types/node
+│ Since your Worker has Node.js compatibility enabled, you should install Node.js types by running "npm i --save-dev @types/node".
+│
+│ 📖 Read about runtime types
+│ https://developers.cloudflare.com/workers/languages/typescript/#generate-types
+│ 📣 Remember to rerun 'wrangler types' after you change your wrangler.jsonc file.
+│
+│ src/index.ts(268,25): error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: Game…
+│   Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+│ src/index.ts(269,27): error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: Game…
+│   Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+│ src/index.ts(270,27): error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: Game…
+│   Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+│ src/index.ts(271,29): error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: Game…
+│   Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+│ src/index.ts(272,34): error TS2339: Property 'transferredHostTo' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatu…
+│   Property 'transferredHostTo' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+│ src/index.ts(273,29): error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: Game…
+│   Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+└─ Failed in 9.6s at /home/sidb/developer/67/67-game/apps/api
+[ELIFECYCLE] Command failed with exit code 2.
+Error: ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL
+
+  × "pnpm recursive run" failed in /home/sidb/developer/67/67-game/apps/api
+
+$ pnpm --filter @67/api test
+
+$ vitest run
+
+ RUN  v4.1.12 /home/sidb/developer/67/67-game/apps/api
+
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+ ✓ test/commands.test.ts (54 tests) 191ms
+Using secrets defined in .dev.vars
+ ✓ test/engine-conformance.test.ts (17 tests) 414ms
+Using secrets defined in .dev.vars
+ ✓ test/room-store.test.ts (10 tests) 101ms
+ ✓ test/room-departure.test.ts (7 tests) 111ms
+Using secrets defined in .dev.vars
+ ✓ test/room-recovery.test.ts (22 tests) 126ms
+ ✓ test/persistent-room-coordinator.test.ts (8 tests) 190ms
+Using secrets defined in .dev.vars
+ ✓ test/room-coordinator.test.ts (23 tests) 176ms
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+ ✓ test/game-commands.test.ts (33 tests) 226ms
+ ✓ test/health.test.ts (3 tests) 199ms
+ ✓ test/player-departure.test.ts (6 tests) 78ms
+ ✓ test/spinners.test.ts (4 tests) 27ms
+ ✓ test/protocol.test.ts (6 tests) 23ms
+ ✓ test/projections.test.ts (7 tests) 45ms
+ ✓ test/turns.test.ts (7 tests) 47ms
+ ✓ test/actions.test.ts (13 tests) 32ms
+ ✓ test/game-setup.test.ts (6 tests) 33ms
+ ❯ test/room-durable-object.test.ts (20 tests | 1 failed) 4735ms
+     ✓ creates a room once and persists its aggregate across stub lookups  497ms
+     ✓ returns expected match-start validation failures as RPC-safe results 159ms
+     × returns expected departure validation failures as RPC-safe results 162ms
+     ✓ starts a match durably only when the host starts a fully connected lobby  397ms
+     ✓ starts a fresh rematch while retaining the room edition and existing seats 176ms
+     ✓ rejects rematches from guests and stale room revisions  625ms
+     ✓ applies optional seat shuffling to the room roster and new game  360ms
+     ✓ allows finished-room players to reconnect without a match-forfeit deadline  442ms
+     ✓ persists a disconnect and schedules its original grace deadline  330ms
+     ✓ moves the single room alarm to the next deadline after reconnect  381ms
+     ✓ clears the alarm when the last disconnected member reconnects 241ms
+     ✓ restores durable room state after Durable Object eviction 196ms
+     ✓ authenticates the room credential and reconnects the same active player 179ms
+     ✓ rejects an invalid room credential without reconnecting 74ms
+     ✓ permanently expires a disconnected member at the exact five-minute deadline 104ms
+     ✓ processes an overdue disconnect through the Durable Object alarm 95ms
+     ✓ commits gameplay commands once and replays the durable receipt 108ms
+     ✓ rejects gameplay commands from a disconnected or mismatched session 73ms
+     ✓ consumes a connection ticket once and rejects replay 68ms
+     ✓ rejects ticket consumption for a non-member or expired ticket 53ms
+exception = kj/compat/http.c++:4365: disconnected: other end of WebSocketPipe was destroyed
+stack: /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@675ddfc /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@3fee934 /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@6928a70 /home/sidb/developer/67/67-game/node_modules/.pnpm/@cloudflare+workerd-linux-64@1.20261110.1/node_modules/@cloudflare/workerd-linux-64/bin/workerd@2c52970
+ ❯ test/anonymous-lobby.test.ts (23 tests | 11 failed) 58371ms
+     ✓ creates a lobby with server-generated identity and a secret credential hash at rest  474ms
+     ✓ joins a lobby with a new server identity and atomically assigned seat 188ms
+     ✓ enforces the eight-player limit  1786ms
+     × broadcasts lobby joins and starts a match through the authenticated host route 5031ms
+     ✓ permanently removes a lobby leaver and transfers host without creating a match forfeit 167ms
+     ✓ closes an empty lobby when its final member leaves 92ms
+     ✓ authenticates a persisted room credential without returning the secret or hash 63ms
+     ✓ rejects an incorrect room credential without revealing membership 56ms
+     ✓ issues a short-lived signed ticket and upgrades a socket exactly once 115ms
+     × keeps a player connected until the final socket for the session closes 5006ms
+     × restores socket identity from its attachment after Durable Object eviction 5003ms
+     × executes a WebSocket gameplay command once and broadcasts fresh snapshots 5004ms
+     × executes a complete player turn through authenticated WebSocket commands 5003ms
+     × answers protocol ping messages with a matching pong 5004ms
+     × resynchronizes with a fresh recipient-safe room snapshot 5003ms
+     × rejects a message that attempts to address a different room 5003ms
+     ✓ tracks lobby socket presence without applying the active-match grace timer 147ms
+     ✓ requires the negotiated protocol and a WebSocket upgrade 58ms
+     ✓ rejects malformed bodies, unsupported modes and disallowed browser origins 18ms
+     × pauses the current player's turn during an active disconnect and resumes it after reconnect 5003ms
+     × authenticates voluntary match departure, transfers the host, and records a forfeit 5003ms
+     × broadcasts disconnect timestamps to the other room members 5004ms
+     ✓ validates rematch requests and authenticates the host credential before dispatch 121ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > broadcasts lobby joins and starts a match through the authenticated host route
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:129:3
+    127|
+    128|
+    129|   it("broadcasts lobby joins and starts a match through the authenticated host route", async () => {
+       |   ^
+    130|     const { body: host } = await createRoom();
+    131|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > keeps a player connected until the final socket for the session closes
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:330:3
+    328|   });
+    329|
+    330|   it("keeps a player connected until the final socket for the session closes", async () => {
+       |   ^
+    331|     const { body: created } = await createRoom();
+    332|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > restores socket identity from its attachment after Durable Object eviction
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:365:3
+    363|   });
+    364|
+    365|   it("restores socket identity from its attachment after Durable Object eviction", async () => {
+       |   ^
+    366|     const { body: created } = await createRoom();
+    367|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > executes a WebSocket gameplay command once and broadcasts fresh snapshots
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:380:3
+    378|
+    379|
+    380|   it("executes a WebSocket gameplay command once and broadcasts fresh snapshots", async () => {
+       |   ^
+    381|     const { body: host } = await createRoom("hidden");
+    382|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > executes a complete player turn through authenticated WebSocket commands
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:566:3
+    564|   });
+    565|
+    566|   it("executes a complete player turn through authenticated WebSocket commands", async () => {
+       |   ^
+    567|     const { body: host } = await createRoom("hidden");
+    568|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > answers protocol ping messages with a matching pong
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:669:3
+    667|   });
+    668|
+    669|   it("answers protocol ping messages with a matching pong", async () => {
+       |   ^
+    670|     const { body: created } = await createRoom();
+    671|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > resynchronizes with a fresh recipient-safe room snapshot
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:685:3
+    683|   });
+    684|
+    685|   it("resynchronizes with a fresh recipient-safe room snapshot", async () => {
+       |   ^
+    686|     const { body: created } = await createRoom("hidden");
+    687|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > rejects a message that attempts to address a different room
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:712:3
+    710|   });
+    711|
+    712|   it("rejects a message that attempts to address a different room", async () => {
+       |   ^
+    713|     const { body: created } = await createRoom();
+    714|     const roomId = String(created.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > pauses the current player's turn during an active disconnect and resumes it after reconnect
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:785:3
+    783|   });
+    784|
+    785|   it("pauses the current player's turn during an active disconnect and resumes it after reconnect", async () => {
+       |   ^
+    786|     const { body: host } = await createRoom("hidden");
+    787|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > authenticates voluntary match departure, transfers the host, and records a forfeit
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:882:3
+    880|   });
+    881|
+    882|   it("authenticates voluntary match departure, transfers the host, and records a forfeit", async () => {
+       |   ^
+    883|     const { body: host } = await createRoom();
+    884|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/12]⎯
+
+ FAIL  test/anonymous-lobby.test.ts > anonymous private lobby HTTP API > broadcasts disconnect timestamps to the other room members
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/anonymous-lobby.test.ts:974:3
+    972|   });
+    973|
+    974|   it("broadcasts disconnect timestamps to the other room members", async () => {
+       |   ^
+    975|     const { body: host } = await createRoom();
+    976|     const roomId = String(host.roomId);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/12]⎯
+
+ FAIL  test/room-durable-object.test.ts > SQLite-backed RoomDurableObject > returns expected departure validation failures as RPC-safe results
+AssertionError: expected { schemaVersion: 1, …(10), …(1) } to match object { Object (status, revision, ...) }
+(19 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -8,9 +8,29 @@
+        "participationStatus": "active",
+        "playerId": "p1",
+        "seat": 1,
+        "sessionId": "session-p1",
+      },
++     {
++       "connectionStatus": "connected",
++       "departedAt": null,
++       "disconnectedAt": null,
++       "joinedAt": 20,
++       "participationStatus": "active",
++       "playerId": "p2",
++       "seat": 2,
++       "sessionId": "session-p2",
++     },
++     {
++       "connectionStatus": "connected",
++       "departedAt": null,
++       "disconnectedAt": null,
++       "joinedAt": 30,
++       "participationStatus": "active",
++       "playerId": "p3",
++       "seat": 3,
++       "sessionId": "session-p3",
++     },
+    ],
+    "revision": 0,
+    "status": "active",
+  }
+
+ ❯ test/room-durable-object.test.ts:119:42
+    117|     })).resolves.toMatchObject({ status: "error", code: "STALE_REVISION" });
+    118|
+    119|     await expect(stub.getSnapshot(roomId)).resolves.toMatchObject({
+       |                                          ^
+    120|       status: "active", revision: 0, members: [
+    121|         expect.objectContaining({ playerId: "p1", participationStatus: "active" }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/12]⎯
+
+
+ Test Files  2 failed | 16 passed (18)
+      Tests  12 failed | 257 passed (269)
+   Start at  16:46:41
+   Duration  69.17s (transform 4.30s, setup 0ms, import 19.52s, tests 65.13s, environment 9ms)
+
+[ELIFECYCLE] Test failed. See above for more details.
+Error: ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL
+
+  × "pnpm recursive run" failed in /home/sidb/developer/67/67-game/apps/api
+
+[ELIFECYCLE] Test failed. See above for more details.
+$ pnpm --filter @67/web build && pnpm --filter @67/api typecheck
+
+$ tsc -p tsconfig.json && vite build
+vite v7.3.8 building client environment for production...
+✓ 30 modules transformed.
+dist/index.html                   0.91 kB │ gzip:  0.47 kB
+dist/assets/index-3aXLCKHe.css   10.13 kB │ gzip:  2.91 kB
+dist/assets/index-Bkc45QBS.js   252.74 kB │ gzip: 78.02 kB
+✓ built in 3.07s
+
+$ wrangler types worker-configuration.d.ts && tsc -p tsconfig.json
+
+ ⛅️ wrangler 4.161.0 (update available 4.163.0)
+───────────────────────────────────────────────
+Generating project types...
+
+interface __BaseEnv_Env {
+        WS_TICKET_SECRET: string;
+        ROOM_DURABLE_OBJECT: DurableObjectNamespace<import("./src/index").RoomDurableObject>;
+}
+declare namespace Cloudflare {
+        interface GlobalProps {
+                mainModule: typeof import("./src/index");
+                durableNamespaces: "RoomDurableObject";
+        }
+        interface Env extends __BaseEnv_Env {}
+}
+interface Env extends __BaseEnv_Env {}
+type StringifyValues<EnvType extends Record<string, unknown>> = {
+        [Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
+};
+declare namespace NodeJS {
+        interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "WS_TICKET_SECRET">> {}
+}
+
+Generating runtime types...
+
+Runtime types generated.
+
+────────────────────────────────────────────────────────────
+✨ Types written to worker-configuration.d.ts
+
+Action required Install @types/node
+Since your Worker has Node.js compatibility enabled, you should install Node.js types by running "npm i --save-dev @types/node".
+
+📖 Read about runtime types
+https://developers.cloudflare.com/workers/languages/typescript/#generate-types
+📣 Remember to rerun 'wrangler types' after you change your wrangler.jsonc file.
+
+src/index.ts:268:25 - error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: GameMode; hostPlayerId: string | null; members: { playerId: string; seat: number; sessionId: string; ... 5 more ...; departedAt: number | null; }[]; ... 4 more ...; updatedAt: number; }; departedMember: { ...; }; transferredHostTo: string | null;...'.
+  Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+
+268     revision: departure.room.revision,
+                            ~~~~
+
+src/index.ts:269:27 - error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: GameMode; hostPlayerId: string | null; members: { playerId: string; seat: number; sessionId: string; ... 5 more ...; departedAt: number | null; }[]; ... 4 more ...; updatedAt: number; }; departedMember: { ...; }; transferredHostTo: string | null;...'.
+  Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+
+269     roomStatus: departure.room.status,
+                              ~~~~
+
+src/index.ts:270:27 - error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: GameMode; hostPlayerId: string | null; members: { playerId: string; seat: number; sessionId: string; ... 5 more ...; departedAt: number | null; }[]; ... 4 more ...; updatedAt: number; }; departedMember: { ...; }; transferredHostTo: string | null;...'.
+  Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+
+270     gameStatus: departure.room.gameState?.status ?? null,
+                              ~~~~
+
+src/index.ts:271:29 - error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: GameMode; hostPlayerId: string | null; members: { playerId: string; seat: number; sessionId: string; ... 5 more ...; departedAt: number | null; }[]; ... 4 more ...; updatedAt: number; }; departedMember: { ...; }; transferredHostTo: string | null;...'.
+  Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+
+271     hostPlayerId: departure.room.hostPlayerId,
+                                ~~~~
+
+src/index.ts:272:34 - error TS2339: Property 'transferredHostTo' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: GameMode; hostPlayerId: string | null; members: { playerId: string; seat: number; sessionId: string; ... 5 more ...; departedAt: number | null; }[]; ... 4 more ...; updatedAt: number; }; departedMember: { ...; }; transferredHostTo: string | null;...'.
+  Property 'transferredHostTo' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+
+272     transferredHostTo: departure.transferredHostTo,
+                                     ~~~~~~~~~~~~~~~~~
+
+src/index.ts:273:29 - error TS2339: Property 'room' does not exist on type '({ room: { schemaVersion: 1; roomId: string; status: RoomStatus; mode: GameMode; hostPlayerId: string | null; members: { playerId: string; seat: number; sessionId: string; ... 5 more ...; departedAt: number | null; }[]; ... 4 more ...; updatedAt: number; }; departedMember: { ...; }; transferredHostTo: string | null;...'.
+  Property 'room' does not exist on type '{ status: "error"; code: string; message: string; } & Disposable'.
+
+273     matchOutcome: departure.room.matchOutcome,
+                                ~~~~
+
+
+Found 6 errors in the same file, starting at: src/index.ts:268
+
+[ELIFECYCLE] Command failed with exit code 2.
+Error: ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL
+
+  × "pnpm recursive run" failed in /home/sidb/developer/67/67-game/apps/api
+
+[ELIFECYCLE] Command failed with exit code 1.
+(base) sidb@SiddharthVictus:~/developer/67/67-game$ pnpm test:e2e
+$ playwright test
+
+Running 6 tests using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/multiplayer.spec.ts:25:1 › two independent browsers create, join, and start an Open Edition match (4.4s)
+  ✓  2 [chromium] › tests/e2e/multiplayer.spec.ts:68:1 › invalid room input is rejected without breaking the homepage (1.4s)
+  ✓  3 [chromium] › tests/e2e/multiplayer.spec.ts:77:1 › host can switch to Hidden Edition and both browsers receive the lobby update (3.6s)
+  ✓  4 [chromium] › tests/e2e/multiplayer.spec.ts:118:1 › a guest cannot change the edition or start the match (3.2s)
+  ✓  5 [chromium] › tests/e2e/multiplayer.spec.ts:144:1 › two browsers complete a full ordinary turn and hand control to the opponent (4.6s)
+  ✓  6 [chromium] › tests/e2e/multiplayer.spec.ts:202:1 › both players can move between the match board and the same room lobby (4.1s)
+
+  6 passed (24.2s)
+(base) sidb@SiddharthVictus:~/developer/67/67-game$
